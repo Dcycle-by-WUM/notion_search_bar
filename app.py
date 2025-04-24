@@ -1,6 +1,16 @@
 import streamlit as st
 from query import query_notion_data, format_results_for_csv
 import datetime
+import os
+from dotenv import load_dotenv
+from components.amplitude import init_amplitude, track_event
+
+# Load environment variables
+load_dotenv()
+
+# Initialize Amplitude
+AMPLITUDE_API_KEY = os.getenv('AMPLITUDE_API_KEY')
+init_amplitude(AMPLITUDE_API_KEY)
 
 st.title("Search whatever tf you want in Signals")
 
@@ -17,6 +27,12 @@ top_k = st.slider("Number of results to return:", min_value=1, max_value=20, val
 # Query button
 if st.button("Search"):
     if query:
+        # Track the search event
+        track_event('Search Button Clicked', {
+            'query': query,
+            'top_k': top_k
+        })
+        
         with st.spinner("Searching..."):
             results = query_notion_data(query, top_k)
             st.session_state.query_results = results
