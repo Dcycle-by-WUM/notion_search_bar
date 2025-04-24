@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search whatever tf you want in Signals</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Add Amplitude Analytics -->
+    <script src="https://cdn.amplitude.com/libs/analytics-browser-2.6.2-min.js.gz"></script>
     <style>
         .result-card {
             transition: all 0.3s ease;
@@ -49,12 +51,21 @@
     </div>
 
     <script>
+        // Initialize Amplitude with the API key from the backend
+        amplitude.init(window.AMPLITUDE_API_KEY);
+
         document.getElementById('queryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const query = document.getElementById('query').value;
             const top_k = document.getElementById('top_k').value;
             const resultsDiv = document.getElementById('results');
+            
+            // Track search button click
+            amplitude.track('Search Button Clicked', {
+                query: query,
+                top_k: top_k
+            });
             
             try {
                 const response = await fetch('/query', {

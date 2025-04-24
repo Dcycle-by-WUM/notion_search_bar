@@ -1,6 +1,14 @@
 import streamlit as st
 from query import query_notion_data, format_results_for_csv
 import datetime
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Get Amplitude API key from environment
+AMPLITUDE_API_KEY = os.getenv('AMPLITUDE_API_KEY')
 
 st.title("Search whatever tf you want in Signals")
 
@@ -49,4 +57,11 @@ if st.session_state.query_results and st.session_state.query_results['matches']:
             mime="text/csv"
         )
 else:
-    st.info("No results to display. Enter a query and click Search.") 
+    st.info("No results to display. Enter a query and click Search.")
+
+# Pass Amplitude API key to the template
+st.markdown(f"""
+<script>
+    window.AMPLITUDE_API_KEY = '{AMPLITUDE_API_KEY}';
+</script>
+""", unsafe_allow_html=True) 
