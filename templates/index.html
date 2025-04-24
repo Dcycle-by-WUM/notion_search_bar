@@ -52,7 +52,9 @@
 
     <script>
         // Initialize Amplitude with the API key from the backend
+        console.log('Initializing Amplitude with API key:', window.AMPLITUDE_API_KEY);
         amplitude.init(window.AMPLITUDE_API_KEY);
+        console.log('Amplitude initialized');
 
         document.getElementById('queryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -62,10 +64,12 @@
             const resultsDiv = document.getElementById('results');
             
             // Track search button click
+            console.log('Tracking search button click with query:', query, 'and top_k:', top_k);
             amplitude.track('Search Button Clicked', {
                 query: query,
                 top_k: top_k
             });
+            console.log('Event tracked');
             
             try {
                 const response = await fetch('/query', {

@@ -9,6 +9,16 @@ load_dotenv()
 
 # Get Amplitude API key from environment
 AMPLITUDE_API_KEY = os.getenv('AMPLITUDE_API_KEY')
+st.write(f"Amplitude API Key loaded: {'Yes' if AMPLITUDE_API_KEY else 'No'}")
+
+# Add Amplitude script and initialization
+st.markdown(f"""
+<script src="https://cdn.amplitude.com/libs/analytics-browser-2.6.2-min.js.gz"></script>
+<script>
+    amplitude.init('{AMPLITUDE_API_KEY}');
+    console.log('Amplitude initialized');
+</script>
+""", unsafe_allow_html=True)
 
 st.title("Search whatever tf you want in Signals")
 
@@ -25,6 +35,18 @@ top_k = st.slider("Number of results to return:", min_value=1, max_value=20, val
 # Query button
 if st.button("Search"):
     if query:
+        # Track the search event
+        st.markdown(f"""
+        <script>
+            console.log('Tracking search with query:', '{query}', 'and top_k:', {top_k});
+            amplitude.track('Search Button Clicked', {{
+                query: '{query}',
+                top_k: {top_k}
+            }});
+            console.log('Event tracked');
+        </script>
+        """, unsafe_allow_html=True)
+        
         with st.spinner("Searching..."):
             results = query_notion_data(query, top_k)
             st.session_state.query_results = results
