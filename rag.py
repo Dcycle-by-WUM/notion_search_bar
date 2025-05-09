@@ -84,7 +84,7 @@ ds_dataframe['merged'] = ds_dataframe.apply(
 
 print(f"Retrieved {len(ds_dataframe)} pages from Notion")
 
-MODEL = "text-embedding-3-small"  # Using OpenAI's publicly available embedding model
+MODEL = "text-embedding-3-large"  # Using OpenAI's large embedding model
 # Compute an embedding for the first document to obtain the embedding dimension.
 sample_embedding_resp = client.embeddings.create(
     input=[ds_dataframe['merged'].iloc[0]],
@@ -97,45 +97,76 @@ print(f"Embedding dimension: {embed_dim}")
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
 # Initialize Pinecone index
-index_name = "notion-rag"
-if index_name not in pc.list_indexes().names():
-    # Create a serverless spec for the index
-    spec = ServerlessSpec(
-        cloud="aws",
-        region="us-east-1"  # Using us-east-1 which is supported by the free plan
-    )
-    pc.create_index(
-        name=index_name,
-        dimension=embed_dim,
-        metric="cosine",
-        spec=spec
-    )
+index_name = "notion-rag-large"  # New index name to avoid conflicts
+if index_name in pc.list_indexes().names():
+    print(f"Deleting existing index {index_name}...")
+    pc.delete_index(index_name)
+
+# Create a serverless spec for the index
+spec = ServerlessSpec(
+    cloud="aws",
+    region="us-east-1"  # Using us-east-1 which is supported by the free plan
+)
+print(f"Creating new index {index_name} with dimension {embed_dim}...")
+pc.create_index(
+    name=index_name,
+    dimension=embed_dim,
+    metric="cosine",
+    spec=spec
+)
 
 index = pc.Index(index_name)
 
-# Generate and upload embeddings
-print("Generating and uploading embeddings...")
-for i, row in ds_dataframe.iterrows():
-    # Generate embedding
-    embedding = client.embeddings.create(
-        input=[row['merged']],
-        model=MODEL
-    ).data[0].embedding
-    
-    # Upload to Pinecone
-    index.upsert(
-        vectors=[{
-            "id": row['page_id'],
-            "values": embedding,
-            "metadata": {
-                "submission_time": row['submission_time'],
-                "how_found": row['how_found'],
-                "opportunity": row['opportunity']
-            }
-        }]
+# Get existing IDs from Pinecone
+print("Fetching existing entries from Pinecone...")
+existing_ids = set()
+
+# List all vectors
+vectors = index.list()
+for vector in vectors:
+    if isinstance(vector, dict) and 'id' in vector:
+        existing_ids.add(vector['id'])
+
+print(f"Found {len(existing_ids)} existing entries in Pinecone")
+
+# Filter out entries that are already in Pinecone
+new_entries = [entry for entry in processed_data if entry['page_id'] not in existing_ids]
+ds_dataframe = DataFrame(new_entries)
+
+if len(ds_dataframe) > 0:
+    # Create merged text for embeddings
+    ds_dataframe['merged'] = ds_dataframe.apply(
+        lambda row: f"Submission Time: {row['submission_time']}\nHow Found: {row['how_found']}\nOpportunity: {row['opportunity']}", axis=1
     )
 
-print("Embeddings uploaded successfully!")
+    print(f"Found {len(ds_dataframe)} new pages to process from Notion")
+
+    # Generate and upload embeddings
+    print("Generating and uploading embeddings...")
+    for i, row in ds_dataframe.iterrows():
+        # Generate embedding
+        embedding = client.embeddings.create(
+            input=[row['merged']],
+            model=MODEL
+        ).data[0].embedding
+        
+        # Upload to Pinecone
+        index.upsert(
+            vectors=[{
+                "id": row['page_id'],
+                "values": embedding,
+                "metadata": {
+                    "submission_time": row['submission_time'],
+                    "how_found": row['how_found'],
+                    "opportunity": row['opportunity']
+                }
+            }]
+        )
+
+    print("New embeddings uploaded successfully!")
+else:
+    print("No new entries to process.")
+
 print(f"Index stats: {index.describe_index_stats()}")
 
 def query_pinecone_index(client, index, model, query_text):
