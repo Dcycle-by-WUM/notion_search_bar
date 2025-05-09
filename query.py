@@ -21,7 +21,7 @@ load_dotenv()
 try:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    index = pc.Index("notion-rag")
+    index = pc.Index("notion-rag-large")
     logger.info("Successfully initialized clients and index")
 except Exception as e:
     logger.error(f"Error initializing clients: {str(e)}")
