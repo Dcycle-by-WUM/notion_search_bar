@@ -29,7 +29,7 @@ if 'query_results' not in st.session_state:
 query = st.text_input("Enter your query:", placeholder="Find the most relevant opportunities related to...")
 
 # Number of results slider
-top_k = st.slider("Number of results to return:", min_value=1, max_value=20, value=5)
+top_k = st.slider("Number of results to return:", min_value=1, max_value=50, value=5)
 
 # Query button
 if st.button("Search"):
