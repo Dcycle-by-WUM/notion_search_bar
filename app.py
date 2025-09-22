@@ -1,5 +1,5 @@
 import streamlit as st
-from query import query_notion_data, format_results_for_csv
+from query import query_notion_data, format_results_for_csv, generate_final_analysis
 import datetime
 import os
 from dotenv import load_dotenv
@@ -24,6 +24,8 @@ st.title("Search whatever tf you want in Signals")
 # Initialize session state for results if not already present
 if 'query_results' not in st.session_state:
     st.session_state.query_results = None
+if 'final_analysis' not in st.session_state:
+    st.session_state.final_analysis = ""
 
 # Query input
 query = st.text_input("Enter your query:", placeholder="Find the most relevant opportunities related to...")
@@ -38,6 +40,13 @@ if st.button("Search"):
         with st.spinner("Searching..."):
             results = query_notion_data(query, top_k)
             st.session_state.query_results = results
+        # Generate final analysis if we have matches
+        if results and results.get('matches'):
+            with st.spinner("Generating final analysis..."):
+                analysis = generate_final_analysis(query, results['matches'])
+                st.session_state.final_analysis = analysis
+        else:
+            st.session_state.final_analysis = ""
     else:
         st.warning("Please enter a query.")
 
@@ -55,6 +64,11 @@ if st.session_state.query_results and st.session_state.query_results['matches']:
             st.write(f"**Opportunity:** {match['metadata']['opportunity']}")
         st.markdown("---")  # Add a separator between results
     
+    # Final analysis section
+    if st.session_state.final_analysis:
+        st.subheader("Final Analysis")
+        st.write(st.session_state.final_analysis)
+
     # Add download button for CSV
     csv_data = format_results_for_csv(st.session_state.query_results)
     if csv_data:

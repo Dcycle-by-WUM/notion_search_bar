@@ -8,7 +8,9 @@ import random
 import string
 from notion_client import Client
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Import OpenAI client and initialize with your API key.
 from openai import OpenAI

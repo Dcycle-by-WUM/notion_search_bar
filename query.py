@@ -121,6 +121,63 @@ def query_notion_data(query_text, top_k=5):
         logger.error(f"Error in query_notion_data: {str(e)}", exc_info=True)
         return {'matches': []}
 
+def generate_final_analysis(query_text, matches):
+    """
+    Generate a final analysis from the top matches using an LLM.
+    
+    Args:
+        query_text (str): The user's query to provide context to the model.
+        matches (list): List of match dicts as returned by query_notion_data()['matches']
+    
+    Returns:
+        str: The model-generated analysis text, or an empty string on failure.
+    """
+    try:
+        if not matches:
+            return ""
+        # Build context block from matches
+        context_blocks = []
+        for m in matches:
+            metadata = m.get('metadata', {})
+            submission_time = metadata.get('submission_time', '')
+            how_found = metadata.get('how_found', '')
+            opportunity = metadata.get('opportunity', '')
+            block = (
+                f"Submission Time: {submission_time}\n"
+                f"How Found: {how_found}\n"
+                f"Opportunity: {opportunity}"
+            )
+            context_blocks.append(block)
+        context = "\n\n".join(context_blocks)
+        # Call chat completion to synthesize a final analysis
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a helpful assistant for Dcycle product teams. Dcycle is a B2B SaaS company that helps "
+                        "companies manage their ESG data. You are given a list of opportunities and problems that have "
+                        "been submitted by Dcycle customers. Your job is to analyze the opportunities and problems and "
+                        "provide a concise, prioritized analysis that is most relevant to the user's query."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"User query: {query_text}\n\n"
+                        f"Based on the following context, analyze the opportunities and problems and provide:\n"
+                        f"- A brief summary of key themes\n- The top opportunities (bulleted)\n- Any notable gaps or risks\n\n"
+                        f"Context:\n{context}"
+                    )
+                }
+            ]
+        )
+        return response.choices[0].message.content if response and response.choices else ""
+    except Exception as e:
+        logger.error(f"Error generating final analysis: {str(e)}", exc_info=True)
+        return ""
+
 if __name__ == "__main__":
     # Example usage
     query = "Find the most relevant opportunities related to scope 3"
