@@ -53,6 +53,11 @@ if st.button("Search"):
 # Display results
 if st.session_state.query_results and st.session_state.query_results['matches']:
     st.subheader("Search Results")
+
+    # Final analysis section
+    if st.session_state.final_analysis:
+        st.subheader("Final Analysis")
+        st.write(st.session_state.final_analysis)
     
     for i, match in enumerate(st.session_state.query_results['matches'], 1):
         st.markdown(f"### Result {i} (Score: {match['score']:.2f})")
@@ -63,11 +68,6 @@ if st.session_state.query_results and st.session_state.query_results['matches']:
         if match['metadata'].get('opportunity'):
             st.write(f"**Opportunity:** {match['metadata']['opportunity']}")
         st.markdown("---")  # Add a separator between results
-    
-    # Final analysis section
-    if st.session_state.final_analysis:
-        st.subheader("Final Analysis")
-        st.write(st.session_state.final_analysis)
 
     # Add download button for CSV
     csv_data = format_results_for_csv(st.session_state.query_results)
