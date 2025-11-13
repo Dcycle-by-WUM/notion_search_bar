@@ -18,8 +18,13 @@ EMBEDDING_MODEL = "text-embedding-3-large"  # For vector embeddings
 load_dotenv()
 
 # Initialize clients
+openai_kwargs = {"api_key": os.getenv("OPENAI_API_KEY")}
+openai_org = os.getenv("OPENAI_ORGANIZATION")
+if openai_org:
+    openai_kwargs["organization"] = openai_org
+
 try:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = OpenAI(**openai_kwargs)
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index = pc.Index("notion-rag-large")
     logger.info("Successfully initialized clients and index")

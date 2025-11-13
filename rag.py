@@ -15,7 +15,12 @@ load_dotenv()
 # Import OpenAI client and initialize with your API key.
 from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client_kwargs = {"api_key": os.getenv("OPENAI_API_KEY")}
+openai_org = os.getenv("OPENAI_ORGANIZATION")
+if openai_org:
+    client_kwargs["organization"] = openai_org
+
+client = OpenAI(**client_kwargs)
 
 # Import Pinecone client and related specifications.
 from pinecone import Pinecone
@@ -204,7 +209,7 @@ context = "\n\n".join(
 
 # Use the context to generate a final answer.
 response = client.chat.completions.create(
-    model="gpt-4",
+    model="gpt-5",
     messages=[
         {"role": "system", "content": "You are a helpful assistant for Dcycle product teams. Dcycle is a B2B SaaS company that helps companies manage their ESG data. You are given a list of opportunities and problems that have been submitted by Dcycle customers. Your job is to analyze the opportunities and problems and provide a list of opportunities that are most relevant to the user's query."},
         {"role": "user", "content": f"Based on the following context, analyze the opportunities and problems:\n\n{context}"}
